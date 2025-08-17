@@ -1,8 +1,4 @@
 <<<<<<< HEAD
-# Full Stack AI Career Coach with Next JS, Neon DB, Tailwind, Prisma, Inngest, Shadcn UI Tutorial 🔥🔥
-## https://youtu.be/UbXpRv5ApKA
-
-![sensai](https://github.com/user-attachments/assets/eee79242-4056-4d19-b655-2873788979e1)
 
 ### Make sure to create a `.env` file with following variables -
 
@@ -20,6 +16,3 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/onboarding
 GEMINI_API_KEY=
 ```
 =======
-# senseai
-AI-Powered Career Coaching for Professional Success
->>>>>>> 3bd8c72e3e9837ee482409246d83360d48096fe3

@@ -9,7 +9,7 @@ import {
   StarsIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +37,7 @@ export default async function Header() {
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-2 md:space-x-4">
-          <SignedIn>
+          <Show when="signed-in">
             <Link href="/dashboard">
               <Button
                 variant="outline"
@@ -84,15 +84,15 @@ export default async function Header() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </SignedIn>
+          </Show>
 
-          <SignedOut>
+          <Show when="signed-out">
             <SignInButton>
               <Button variant="outline">Sign In</Button>
             </SignInButton>
-          </SignedOut>
+          </Show>
 
-          <SignedIn>
+          <Show when="signed-in">
             <UserButton
               appearance={{
                 elements: {
@@ -103,7 +103,7 @@ export default async function Header() {
               }}
               afterSignOutUrl="/"
             />
-          </SignedIn>
+          </Show>
         </div>
       </nav>
     </header>

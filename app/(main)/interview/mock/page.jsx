@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Quiz from "../_components/quiz";
+import MockInterviewTabs from "./mock-interview-tabs";
 
 export default function MockInterviewPage() {
   return (
@@ -22,7 +22,7 @@ export default function MockInterviewPage() {
         </div>
       </div>
 
-      <Quiz />
+      <MockInterviewTabs />
     </div>
   );
 }

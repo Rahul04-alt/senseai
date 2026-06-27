@@ -4,6 +4,7 @@ import { Trophy, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardFooter } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import SkillRoadmap from "./skill-roadmap";
 
 export default function QuizResult({
   result,
@@ -11,6 +12,8 @@ export default function QuizResult({
   onStartNew,
 }) {
   if (!result) return null;
+
+  const hasWrongAnswers = result.questions.some((q) => !q.isCorrect);
 
   return (
     <div className="mx-auto">
@@ -58,6 +61,16 @@ export default function QuizResult({
             </div>
           ))}
         </div>
+
+        {/* Skill Roadmap */}
+        {hasWrongAnswers && result.id && (
+          <div className="pt-2">
+            <SkillRoadmap
+              assessmentId={result.id}
+              quizScore={result.quizScore}
+            />
+          </div>
+        )}
       </CardContent>
 
       {!hideStartNew && (

@@ -82,6 +82,11 @@ body {
   }
 }
 
+/* Light mode: make gradient-title use deep dark tones so it's clearly readable */
+html:not(.dark) .gradient-title {
+  background-image: linear-gradient(to bottom, #111827, #374151, #1f2937);
+}
+
 .hero-image-wrapper {
   perspective: 1000px;
 }

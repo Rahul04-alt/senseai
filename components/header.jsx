@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import Image from "next/image";
 import { checkUser } from "@/lib/checkUser";
+import { ThemeToggle } from "./theme-toggle";
 
 export default async function Header() {
   await checkUser();
@@ -55,6 +56,8 @@ export default async function Header() {
               <Button variant="outline">Sign In</Button>
             </SignInButton>
           </Show>
+
+          <ThemeToggle />
 
           <Show when="signed-in">
             <UserButton

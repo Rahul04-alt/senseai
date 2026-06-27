@@ -357,3 +357,256 @@ export async function generateSkillRoadmap(assessmentId) {
     throw new Error("Failed to generate learning roadmap. Please try again.");
   }
 }
+
+// ─── Behavioral (STAR) Practice ────────────────────────────────────────────────
+
+export async function generateBehavioralQuestion() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { industry: true, skills: true, experience: true },
+  });
+  if (!user) throw new Error("User not found");
+
+  const prompt = `
+    Generate a single behavioral interview question for a ${user.industry} professional
+    with ${user.experience || "a few"} years of experience.
+    Behavioral questions ask candidates to describe past situations using the STAR method.
+    Examples: "Tell me about a time you handled conflict", "Describe a project you led under pressure".
+    Return ONLY this JSON, no extra text:
+    {
+      "question": "Behavioral interview question string",
+      "category": "Leadership" | "Teamwork" | "Conflict Resolution" | "Problem Solving" | "Adaptability" | "Communication",
+      "hint": "One-line tip reminding the candidate to use the STAR method for this question"
+    }
+  `;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+    const text = result.text.trim();
+    return JSON.parse(text.replace(/```(?:json)?\n?/g, "").trim());
+  } catch (error) {
+    console.error("Error generating behavioral question:", error);
+    throw new Error("Failed to generate question. Please try again.");
+  }
+}
+
+export async function evaluateSTARAnswer(question, answer) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { industry: true },
+  });
+  if (!user) throw new Error("User not found");
+
+  const prompt = `
+    You are an expert interviewer for the ${user.industry} industry evaluating a behavioral answer using STAR.
+    QUESTION: ${question}
+    CANDIDATE'S ANSWER: ${answer}
+    Evaluate: Situation (0-25), Task (0-25), Action (0-25), Result (0-25).
+    Return ONLY this JSON, no extra text:
+    {
+      "overallScore": number (0-100),
+      "starBreakdown": {
+        "situation": { "score": number, "feedback": "string" },
+        "task":      { "score": number, "feedback": "string" },
+        "action":    { "score": number, "feedback": "string" },
+        "result":    { "score": number, "feedback": "string" }
+      },
+      "strengths": ["strength1", "strength2"],
+      "improvements": ["improvement1", "improvement2"],
+      "improvedAnswer": "Rewritten answer that better follows STAR (150-200 words)",
+      "overallFeedback": "2-sentence overall assessment"
+    }
+  `;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+    const text = result.text.trim();
+    return JSON.parse(text.replace(/```(?:json)?\n?/g, "").trim());
+  } catch (error) {
+    console.error("Error evaluating STAR answer:", error);
+    throw new Error("Failed to evaluate answer. Please try again.");
+  }
+}
+
+// ─── Company Research Brief ─────────────────────────────────────────────────────
+
+export async function generateCompanyBrief(companyName, jobTitle) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { industry: true },
+  });
+  if (!user) throw new Error("User not found");
+
+  const prompt = `
+    You are a career coach preparing a ${user.industry} candidate for an interview at ${companyName}
+    for a ${jobTitle || "professional"} role.
+    Generate a concise interview preparation brief.
+    Return ONLY this JSON, no extra text:
+    {
+      "companyOverview": "2-3 sentence summary of what the company does and its market position",
+      "culture": ["culture trait 1", "culture trait 2", "culture trait 3"],
+      "interviewStyle": "2-3 sentences describing their typical interview process and style",
+      "likelyQuestions": [
+        "Likely interview question 1",
+        "Likely interview question 2",
+        "Likely interview question 3",
+        "Likely interview question 4",
+        "Likely interview question 5"
+      ],
+      "keyTopics": ["Topic to know 1", "Topic to know 2", "Topic to know 3"],
+      "prepTips": ["Specific prep tip 1", "Specific prep tip 2", "Specific prep tip 3"],
+      "redFlags": ["Common mistake to avoid 1", "Common mistake to avoid 2"]
+    }
+  `;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+    const text = result.text.trim();
+    return JSON.parse(text.replace(/```(?:json)?\n?/g, "").trim());
+  } catch (error) {
+    console.error("Error generating company brief:", error);
+    throw new Error("Failed to generate company brief. Please try again.");
+  }
+}
+
+// ─── Interview Cheat Sheet from JD ─────────────────────────────────────────────
+
+export async function generateInterviewCheatSheet(jobDescription) {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    select: { industry: true, skills: true, experience: true, bio: true },
+  });
+  if (!user) throw new Error("User not found");
+
+  const prompt = `
+    You are an expert career coach. Prepare a personalized interview cheat sheet.
+    CANDIDATE PROFILE:
+    - Industry: ${user.industry}
+    - Years of Experience: ${user.experience || "not specified"}
+    - Skills: ${user.skills?.join(", ") || "not specified"}
+    - Background: ${user.bio || "not specified"}
+    JOB DESCRIPTION:
+    ${jobDescription}
+    Generate 10 likely questions for this role with personalized answer frameworks from the candidate's profile.
+    Return ONLY this JSON, no extra text:
+    {
+      "roleTitle": "Inferred job title",
+      "questions": [
+        {
+          "question": "Interview question",
+          "type": "Technical" | "Behavioral" | "Situational" | "Culture Fit",
+          "answerFramework": ["Key point 1", "Key point 2", "Key point 3"],
+          "personalizedTip": "Tip specific to the candidate's background"
+        }
+      ],
+      "keySkillsToEmphasize": ["Matching skill 1", "Matching skill 2", "Matching skill 3"],
+      "redFlags": ["Gap to address 1", "Gap to address 2"]
+    }
+    IMPORTANT: Return ONLY valid JSON. Answer frameworks must use the candidate's profile.
+  `;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+    const text = result.text.trim();
+    return JSON.parse(text.replace(/```(?:json)?\n?/g, "").trim());
+  } catch (error) {
+    console.error("Error generating cheat sheet:", error);
+    throw new Error("Failed to generate cheat sheet. Please try again.");
+  }
+}
+
+// ─── Profile-Based Skill Gap Roadmap ───────────────────────────────────────────
+
+export async function generateProfileSkillRoadmap() {
+  const { userId } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+    include: { industryInsight: true },
+  });
+  if (!user) throw new Error("User not found");
+  if (!user.industryInsight)
+    throw new Error(
+      "No industry data found. Visit your dashboard first to generate industry insights."
+    );
+
+  const recommendedSkills = user.industryInsight.recommendedSkills || [];
+  const userSkills = user.skills || [];
+  const missingSkills = recommendedSkills.filter(
+    (s) => !userSkills.map((u) => u.toLowerCase()).includes(s.toLowerCase())
+  );
+
+  if (missingSkills.length === 0) {
+    throw new Error(
+      "You already have all the recommended skills for your industry. Great work!"
+    );
+  }
+
+  const prompt = `
+    You are a career development expert for the ${user.industry} industry.
+    A professional with ${user.experience || "a few"} years of experience currently has:
+    Skills: ${userSkills.join(", ") || "none listed"}
+    Industry recommended skills: ${recommendedSkills.join(", ")}
+    Missing skills: ${missingSkills.join(", ")}
+    Create a personalized 4-week learning roadmap to close their skill gaps.
+    Return ONLY this JSON, no extra text:
+    {
+      "title": "Your Personalized Skill Gap Roadmap",
+      "summary": "1-2 sentence summary",
+      "skillsAddressed": ["skill1", "skill2"],
+      "weeks": [
+        {
+          "week": 1,
+          "topic": "Main skill focus",
+          "description": "What the learner will cover (2-3 sentences)",
+          "tasks": ["Hands-on task 1", "Hands-on task 2"],
+          "resources": [
+            {
+              "title": "Resource name",
+              "type": "Article" | "Video" | "Documentation" | "Tutorial" | "Practice",
+              "url": "Real free URL (MDN, freeCodeCamp, YouTube, official docs, Coursera free)"
+            }
+          ]
+        }
+      ]
+    }
+    IMPORTANT: Return ONLY valid JSON. Include exactly 4 weeks. Use real free resource URLs.
+  `;
+
+  try {
+    const result = await ai.models.generateContent({
+      model: "gemini-3.1-flash-lite",
+      contents: prompt,
+    });
+    const text = result.text.trim();
+    return JSON.parse(text.replace(/```(?:json)?\n?/g, "").trim());
+  } catch (error) {
+    console.error("Error generating skill gap roadmap:", error);
+    throw new Error("Failed to generate roadmap. Please try again.");
+  }
+}

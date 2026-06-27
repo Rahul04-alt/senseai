@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,15 +12,23 @@ import {
 } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { generateQuiz, saveQuizResult } from "@/actions/interview";
 import QuizResult from "./quiz-result";
 import useFetch from "@/hooks/use-fetch";
 import { BarLoader } from "react-spinners";
+import { Timer } from "lucide-react";
+
+const TIMER_SECONDS = 30;
 
 export default function Quiz() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState([]);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [timerMode, setTimerMode] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(TIMER_SECONDS);
+  const timerRef = useRef(null);
 
   const {
     loading: generatingQuiz,
@@ -40,6 +48,24 @@ export default function Quiz() {
       setAnswers(new Array(quizData.length).fill(null));
     }
   }, [quizData]);
+
+  // Timer countdown
+  useEffect(() => {
+    if (!timerMode || !quizData || showExplanation) return;
+    setSecondsLeft(TIMER_SECONDS);
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(timerRef.current);
+          // Auto-advance: if no answer selected, treat as skipped
+          handleNext();
+          return TIMER_SECONDS;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [currentQuestion, timerMode, quizData]); // eslint-disable-line
 
   const handleAnswer = (answer) => {
     const newAnswers = [...answers];
@@ -103,11 +129,23 @@ export default function Quiz() {
         <CardHeader>
           <CardTitle>Ready to test your knowledge?</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <p className="text-muted-foreground">
             This quiz contains 10 questions specific to your industry and
             skills. Take your time and choose the best answer for each question.
           </p>
+          <div className="flex items-center gap-3 pt-1">
+            <Switch
+              id="timer-toggle"
+              checked={timerMode}
+              onCheckedChange={setTimerMode}
+            />
+            <Label htmlFor="timer-toggle" className="flex items-center gap-1.5 cursor-pointer">
+              <Timer className="h-4 w-4" />
+              Timer Mode
+              <span className="text-xs text-muted-foreground">({TIMER_SECONDS}s per question)</span>
+            </Label>
+          </div>
         </CardContent>
         <CardFooter>
           <Button onClick={generateQuizFn} className="w-full">
@@ -123,9 +161,20 @@ export default function Quiz() {
   return (
     <Card className="mx-2">
       <CardHeader>
-        <CardTitle>
-          Question {currentQuestion + 1} of {quizData.length}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle>
+            Question {currentQuestion + 1} of {quizData.length}
+          </CardTitle>
+          {timerMode && (
+            <Badge
+              variant={secondsLeft <= 10 ? "destructive" : "secondary"}
+              className="flex items-center gap-1 text-sm px-3 py-1"
+            >
+              <Timer className="h-3.5 w-3.5" />
+              {secondsLeft}s
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-lg font-medium">{question.question}</p>
